@@ -163,7 +163,7 @@ const DashboardLanguage = (() => {
   let saved;
   try { saved = localStorage.getItem(key); } catch {}
   const requested = params.get('lang');
-  let lang = ['en','ko'].includes(requested) ? requested : saved === 'en' ? 'en' : 'ko';
+  let lang = ['en','ko'].includes(requested) ? requested : saved === 'ko' ? 'ko' : 'en';
   function text(original, values) {
     const translated = lang === 'en' ? (english[original] ?? original) : original;
     return values ? translated.replace(/\{(\w+)\}/g, (_, name) => values[name]) : translated;
