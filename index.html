@@ -139,7 +139,7 @@
   .live.failed i { background: var(--down); }
   #stale { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--down-text); }
 </style>
-<link rel="stylesheet" href="workspace.css?v=v5.2.4">
+<link rel="stylesheet" href="workspace.css?v=v5.5.0">
 <link rel="stylesheet" href="versions.css">
 </head>
 <body>
@@ -147,7 +147,7 @@
   <aside class="sidebar" aria-label="워크스페이스 메뉴">
     <a class="workspace-brand" href="#overview" aria-label="KRAPI 트레이딩 현황"><span class="brand-art"><img class="brand-symbol brand-light" src="krapi-symbol-black.svg" alt=""><img class="brand-symbol brand-dark" src="krapi-symbol-white.svg" alt=""><img class="brand-wordmark brand-light" src="krapi-wordmark-black.svg" alt="KRAPI"><img class="brand-wordmark brand-dark" src="krapi-wordmark-white.svg" alt="KRAPI"></span><span class="brand-caption">TRADING AGENT</span></a>
     <div class="nav-label">WORKSPACE</div>
-    <details class="version-category" data-version="v5"><summary><strong>V5</strong><span>운영 현황</span></summary><nav class="side-nav"><a class="active" href="#overview" data-section="#overview"><span aria-hidden="true">▦</span>트레이딩 현황</a><a class="" href="#chart-panel" data-section="#chart-panel"><span aria-hidden="true">⌁</span>실시간 차트</a><a href="#trades-panel" data-section="#trades-panel"><span aria-hidden="true">▤</span>거래 내역</a></nav></details>
+    <details class="version-category" data-version="v5"><summary><strong>V5</strong><span>운영 현황</span></summary><nav class="side-nav"><a class="active" href="#overview" data-section="#overview"><span aria-hidden="true">▦</span>트레이딩 현황</a><a href="#report" data-section="#report"><span aria-hidden="true">▥</span>코인 수익 리포트</a><a class="" href="#chart-panel" data-section="#chart-panel"><span aria-hidden="true">⌁</span>실시간 차트</a><a href="#trades-panel" data-section="#trades-panel"><span aria-hidden="true">▤</span>거래 내역</a></nav></details>
     <div class="side-divider"></div><div class="nav-label">MARKETS</div>
     <nav class="asset-nav" aria-label="시장 종목">
       <details class="market-category" id="crypto-category" open><summary>Crypto<span>3</span></summary><div class="market-items"><button data-asset="BTC"><img class="asset-icon" src="coin-btc.svg" alt="">Bitcoin<span class="asset-caption">BTC</span></button><button data-asset="ETH"><img class="asset-icon" src="coin-eth.png" alt="">Ethereum<span class="asset-caption">ETH</span></button><button data-asset="SOL"><img class="asset-icon" src="coin-sol.svg" alt="">Solana<span class="asset-caption">SOL</span></button></div></details>
@@ -164,6 +164,14 @@
   </header>
   <p class="intro-copy">BTC, ETH, SOL의 시세와 계좌 현황을 확인하세요.</p>
   <div id="stale" role="status" hidden></div><button id="stock-shortcut" class="stock-shortcut" aria-controls="stock-panel">주식 토큰 보기 →</button>
+  <section id="report" aria-labelledby="report-title">
+    <div class="report-head"><h2 id="report-title">코인 수익 리포트</h2><div class="seg report-presets" role="group" aria-label="조회 기간">
+      <button data-period="all" aria-pressed="true" class="on">전체 누적</button><button data-period="today" aria-pressed="false">오늘</button><button data-period="week" aria-pressed="false">최근 7일</button><button data-period="custom" aria-pressed="false">직접 선택</button>
+    </div></div>
+    <div id="report-dates" hidden><label>시작일 <input type="date" id="report-from"></label><label>종료일 <input type="date" id="report-to"></label></div>
+    <p id="report-period">BTC · ETH · SOL 모의 계좌를 불러오는 중</p>
+    <div id="report-result"></div>
+  </section>
   <nav class="symbols" id="symbols" aria-label="종목"></nav>
   <section class="pos" id="total-pnl" aria-label="계좌 전체 손익"><div class="muted">전체 손익 불러오는 중</div></section>
   <section class="pos" id="pos" aria-label="지금 포지션"></section>
@@ -182,6 +190,7 @@
 <script src="lwc.js"></script>
 <script src="chart-data.js?v=v5.2.1"></script>
 <script src="indicators.js"></script>
+<script src="performance.js"></script>
 <script src="live-pnl.js?v=v5.2.6"></script>
 <script>
 const Q = new URLSearchParams(location.search), KST = 9 * 3600;
@@ -464,7 +473,10 @@ async function refresh(){
   try{
     const stamp=Date.now();
     const [data,rows]=await Promise.all((IS_V4?['v4-data.json','v4-candles.json']:['data.json','candles.json']).map(async name=>{
-      const response=await fetch(`${name}?v=${stamp}`,{cache:'no-store',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('fetch failed');return response.json();
+      const response=await fetch(`${name}?v=${stamp}`,{cache:'no-store',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('fetch failed');
+      const payload=await response.json();
+      if(name==='data.json')PerformanceReport.update(payload);
+      return payload;
     }));
     validate(data,rows);D=data;C=rows;failed=false;render(true);
   }catch{failed=true;}finally{refreshing=false;status();}
@@ -481,6 +493,6 @@ document.querySelectorAll('.side-nav a').forEach(a=>a.addEventListener('click',(
 refresh();LivePnl.feed(q=>{liveQuotes[q.symbol]=q;},()=>{});
 setInterval(()=>{if(D&&C&&!stockVisible){prepareLive();header();totalPnl();position();overlay();}},1000);setInterval(refresh,10000);setInterval(status,10000);
 </script>
-<script src="stock-view.js?v=v5.2.5"></script>
+<script src="stock-view.js?v=v5.5.0"></script>
 </body>
 </html>

@@ -46,7 +46,7 @@ async function refreshStocks(){
 function showStocks(show){
   stockVisible=show;
   el(show?'stock-category':'crypto-category').open=true;
-  for(const id of ['symbols','total-pnl','pos','trades-panel'])el(id).hidden=show;
+  for(const id of ['symbols','total-pnl','pos','trades-panel','report'])el(id).hidden=show;
   if(show)el('stock-panel').insertBefore(el('chart-panel'),el('stock-positions').closest('section'));
   else el('trades-panel').before(el('chart-panel'));
   el('chart-panel').hidden=false;
@@ -59,7 +59,7 @@ function showStocks(show){
 }
 el('stock-shortcut').onclick=()=>showStocks(true);
 el('stock-back').onclick=()=>{showStocks(false);if(D&&C)render();};
-document.querySelectorAll('.side-nav a').forEach(a=>a.addEventListener('click',e=>{if(!stockVisible)return;e.preventDefault();const target=a.dataset.section==='#chart-panel'?el('chart-panel'):a.dataset.section==='#trades-panel'?el('stock-fills').closest('section'):el('overview');target.scrollIntoView({block:'start'});}));
+document.querySelectorAll('.side-nav a').forEach(a=>a.addEventListener('click',e=>{if(!stockVisible)return;if(a.dataset.section==='#report'){showStocks(false);if(D&&C)render();return;}e.preventDefault();const target=a.dataset.section==='#chart-panel'?el('chart-panel'):a.dataset.section==='#trades-panel'?el('stock-fills').closest('section'):el('overview');target.scrollIntoView({block:'start'});}));
 setInterval(()=>{if(stockVisible)refreshStocks();},10000);
 setInterval(stockStatus,10000);
 
