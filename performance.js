@@ -14,7 +14,7 @@ const PerformanceReport = (() => {
     get('report-result').textContent = text;
   }
   const rate = (pnl, base) => base > 0 ? signed(100 * pnl / base) + '%' : '—';
-  const shortDate = iso => iso.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_, y, m, d) => y + '년 ' + Number(m) + '월 ' + Number(d) + '일');
+  const shortDate = iso => new Intl.DateTimeFormat(DashboardLanguage.locale, {year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(iso+'T00:00:00Z'));
   const sumAccounts = (accounts, key) => coins.reduce((n, s) => n + accounts[s][key], 0);
   function card(id, period, pnl, base) {
     const root = get(id);
@@ -35,10 +35,10 @@ const PerformanceReport = (() => {
     const dayBase = dayOpen ? sumAccounts(dayOpen.accounts, 'equity') : null;
     const dayPnl = dayOpen ? sumAccounts(latest.accounts, 'equity') - dayBase : null;
     const isStale = !latest.healthy || Date.now() / 1000 - latest.updated > 900;
-    get('report-asof').textContent = '모의 계좌 · ' + through + ' KST' + (isStale ? ' · 갱신 지연' : ' 기준');
-    card('report-lifetime', (first ? shortDate(first) : '첫 거래일') + ' ~ ' + shortDate(today),
+    get('report-asof').textContent = uiText('모의 계좌') + ' · ' + uiText('{time} 기준',{time:through+' KST'}) + (isStale ? ' · '+uiText('갱신 지연') : '');
+    card('report-lifetime', (first ? shortDate(first) : uiText('첫 거래일')) + ' ~ ' + shortDate(today),
       sumAccounts(latest.accounts, 'total_pnl'), principal);
-    card('report-today', shortDate(today) + (dayOpen ? '' : loading ? ' · 조회 중' : ' · 전일 마감 기록 없음'), dayPnl, dayBase);
+    card('report-today', shortDate(today) + (dayOpen ? '' : loading ? ' · '+uiText('조회 중') : ' · '+uiText('전일 마감 기록 없음')), dayPnl, dayBase);
     from.max = to.max = today;
     from.min = to.min = first || (dates.length ? shiftDay(dates[0], 1) : '');
     if (mode !== 'custom') {
@@ -48,21 +48,21 @@ const PerformanceReport = (() => {
     const start = from.value, end = to.value;
     const usePrincipal = mode === 'all' || (first && first === start);
     let before, after = latest.accounts;
-    let basis = '원금', ending = '현재 평가액', note = '세 계좌의 합산 원금 대비 수익률';
+    let basis = uiText('원금'), ending = uiText('현재 평가액'), note = uiText('세 계좌의 합산 원금 대비 수익률');
     const period = get('report-period');
     period.textContent = '';
     if (mode !== 'all') {
-      if (!start || !end || start > end || end > today || (first && start < first)) return message('시작일과 종료일을 확인해 주세요.');
-      if (!history && loading) return message('날짜별 평가액을 불러오는 중입니다.');
+      if (!start || !end || start > end || end > today || (first && start < first)) return message(uiText('시작일과 종료일을 확인해 주세요.'));
+      if (!history && loading) return message(uiText('날짜별 평가액을 불러오는 중입니다.'));
       const opening = history?.days[shiftDay(start, -1)];
       const closing = end === today ? latest : history?.days[end];
-      if ((!usePrincipal && !opening) || !closing) return message('이 기간의 시작 또는 종료 평가액 기록이 없습니다.');
+      if ((!usePrincipal && !opening) || !closing) return message(uiText('이 기간의 시작 또는 종료 평가액 기록이 없습니다.'));
       before = usePrincipal ? undefined : opening.accounts;
       after = closing.accounts;
-      basis = usePrincipal ? '원금' : '시작 평가액';
-      ending = end === today ? '현재 평가액' : '종료 평가액';
-      const since = usePrincipal ? '첫 거래일 원금' : localDateTime(opening.at);
-      note = '평가 기준 ' + since + ' → ' + localDateTime(end === today ? latest.updated : closing.at) + ' KST';
+      basis = usePrincipal ? uiText('원금') : uiText('시작 평가액');
+      ending = end === today ? uiText('현재 평가액') : uiText('종료 평가액');
+      const since = usePrincipal ? uiText('첫 거래일 원금') : localDateTime(opening.at);
+      note = uiText('평가 기준')+' ' + since + ' → ' + localDateTime(end === today ? latest.updated : closing.at) + ' KST';
     }
     const rows = coins.map(s => {
       const base = before ? before[s].equity : latest.accounts[s].baseline_equity;
@@ -78,9 +78,9 @@ const PerformanceReport = (() => {
     const coinRow = r => '<tr><th scope="row"><span class="report-coin"><img class="coin-icon" alt="" src="coin-' + r.s.toLowerCase() + (r.s === 'ETH' ? '.png' : '.svg') + '">' + r.s + '</span></th><td>' + money(r.equity) + '</td><td class="' + color(r.pnl) + '">' + signed(r.pnl) + '</td><td class="' + color(r.pnl) + '">' + rate(r.pnl, r.base) + '</td></tr>';
     const stale = (!latest.healthy || Date.now() / 1000 - latest.updated > 900) && (mode === 'all' || end === today);
     get('report-result').innerHTML =
-      '<dl class="report-grid">' + detail(basis, money(sum('base'))) + detail(ending, money(sum('equity'))) + detail('실현 손익', signed(sum('realized'))) + detail(before ? '미실현 손익 변동' : '미실현 손익', signed(sum('floating'))) + '</dl>' +
-      '<table class="report-table" aria-label="종목별 모의 성과, 금액 단위 USDT"><thead><tr><th>종목</th><th>' + ending + '</th><th>손익</th><th>수익률</th></tr></thead><tbody>' + rows.map(coinRow).join('') + '</tbody><tfoot><tr><th scope="row">합계</th><td>' + money(sum('equity')) + '</td><td class="' + color(pnl) + '">' + signed(pnl) + '</td><td class="' + color(pnl) + '">' + rate(pnl, sum('base')) + '</td></tr></tfoot></table>' +
-      '<p class="report-note">' + (stale ? '마지막 수신 자료 기준 · ' : '') + note + ' · 모의 계좌 · 금액 단위 USDT</p>';
+      '<dl class="report-grid">' + detail(basis, money(sum('base'))) + detail(ending, money(sum('equity'))) + detail(uiText('실현 손익'), signed(sum('realized'))) + detail(before ? uiText('미실현 손익 변동') : uiText('미실현 손익'), signed(sum('floating'))) + '</dl>' +
+      '<table class="report-table" aria-label="'+uiText('종목별 모의 성과, 금액 단위 USDT')+'"><thead><tr><th>'+uiText('종목')+'</th><th>' + ending + '</th><th>'+uiText('손익')+'</th><th>'+uiText('수익률')+'</th></tr></thead><tbody>' + rows.map(coinRow).join('') + '</tbody><tfoot><tr><th scope="row">'+uiText('합계')+'</th><td>' + money(sum('equity')) + '</td><td class="' + color(pnl) + '">' + signed(pnl) + '</td><td class="' + color(pnl) + '">' + rate(pnl, sum('base')) + '</td></tr></tfoot></table>' +
+      '<p class="report-note">' + (stale ? uiText('마지막 수신 자료 기준')+' · ' : '') + note + ' · '+uiText('모의 계좌')+' · '+uiText('금액 단위 USDT')+'</p>';
   }
   function validHistory(h, today) {
     if (!h?.days || typeof h.days !== 'object' || Array.isArray(h.days) ||
@@ -120,6 +120,7 @@ const PerformanceReport = (() => {
     if (mode === 'custom') from.focus();
   }));
   for (const input of [from, to]) input.addEventListener('input', () => selectMode('custom'));
+  window.addEventListener('dashboard-language', render);
   return {update(value) {
     if (value?.version !== 'v5' || value.visibility !== 'public-summary' || !Number.isFinite(value.updated) ||
         !coins.every(s => ['equity','baseline_equity','realized','unrealized','total_pnl'].every(k => Number.isFinite(value.accounts?.[s]?.[k])) &&
