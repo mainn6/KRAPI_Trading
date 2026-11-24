@@ -139,7 +139,7 @@
   .live.failed i { background: var(--down); }
   #stale { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--down-text); }
 </style>
-<link rel="stylesheet" href="workspace.css?v=v5.5.0">
+<link rel="stylesheet" href="workspace.css?v=v5.5.1">
 <link rel="stylesheet" href="versions.css">
 </head>
 <body>
@@ -165,11 +165,16 @@
   <p class="intro-copy">BTC, ETH, SOL의 시세와 계좌 현황을 확인하세요.</p>
   <div id="stale" role="status" hidden></div><button id="stock-shortcut" class="stock-shortcut" aria-controls="stock-panel">주식 토큰 보기 →</button>
   <section id="report" aria-labelledby="report-title">
-    <div class="report-head"><h2 id="report-title">코인 수익 리포트</h2><div class="seg report-presets" role="group" aria-label="조회 기간">
+    <div class="report-head"><h2 id="report-title">BTC · ETH · SOL 수익 리포트</h2><small id="report-asof">모의 계좌 · KST</small></div>
+    <div class="report-overview">
+      <div class="report-card" id="report-lifetime"><h3>전체 누적 손익</h3><p class="card-period">첫 거래일부터</p><div class="card-value"><strong>—</strong><b></b></div></div>
+      <div class="report-card" id="report-today"><h3>오늘 손익</h3><p class="card-period">한국시간 기준</p><div class="card-value"><strong>—</strong><b></b></div></div>
+    </div>
+    <div class="report-head"><h3>종목별 성과</h3><div class="seg report-presets" role="group" aria-label="조회 기간">
       <button data-period="all" aria-pressed="true" class="on">전체 누적</button><button data-period="today" aria-pressed="false">오늘</button><button data-period="week" aria-pressed="false">최근 7일</button><button data-period="custom" aria-pressed="false">직접 선택</button>
     </div></div>
-    <div id="report-dates" hidden><label>시작일 <input type="date" id="report-from"></label><label>종료일 <input type="date" id="report-to"></label></div>
-    <p id="report-period">BTC · ETH · SOL 모의 계좌를 불러오는 중</p>
+    <div id="report-dates"><label>시작일 <input type="date" id="report-from"></label><label>종료일 <input type="date" id="report-to"></label></div>
+    <p id="report-period" role="status">계좌 자료를 불러오는 중</p>
     <div id="report-result"></div>
   </section>
   <nav class="symbols" id="symbols" aria-label="종목"></nav>
@@ -190,7 +195,7 @@
 <script src="lwc.js"></script>
 <script src="chart-data.js?v=v5.2.1"></script>
 <script src="indicators.js"></script>
-<script src="performance.js"></script>
+<script src="performance.js?v=v5.5.1"></script>
 <script src="live-pnl.js?v=v5.2.6"></script>
 <script>
 const Q = new URLSearchParams(location.search), KST = 9 * 3600;
